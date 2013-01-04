@@ -99,17 +99,44 @@ if(exports){
             'X-Served-By': 'me',
             'Content-Type': 'text/html'
             });
-        response.end('Hello, from Path Listener "/" !\n');
+        response.end(
+            '<html><head>'+
+            '<meta http-equiv="refresh" content="5; URL=/bla" />'+
+            '</head>'+
+            
+            '<body><h1>'+
+            'Hello, from Path Listener "/" !\n'+
+            '</h1></body></html>'
+            );
     };
     
     pl = new PathListener('/bla');
-    pl.handle = function Listener__handle( request , response ){
-        response.writeHead(200, 'OK', {
+    pl.Finisher = function Finisher( request , response ){
+        this.request = request;
+        this.response = response;
+        var me = this;
+        this.call = function(){ me.finish(); delete me; };
+    };
+    pl.Finisher.prototype.finish = function(){
+        this.response.writeHead(200, 'OK', {
             'X-Served-By': 'me',
             'Content-Type': 'text/html'
             });
-        response.end('Hello, from Path Listener "/bla" !\n');
+        this.response.end(
+            '<html><head>'+
+            '<meta http-equiv="refresh" content="5; URL=/" />'+
+            '</head>'+
+            
+            '<body><h1>'+
+            'Hello, from Path Listener "/bla" !\n'+
+            '</h1></body></html>'
+            );
     };
     
-    server.listen(process.env.PORT || '8080', '0.0.0.0');
+    pl.handle = function Listener__handle( request , response ){
+        var finisher = new pl.Finisher(request , response );
+        setTimeout( finisher.call , 1000);
+    };
+    
+    server.listen(process.env.PORT || '8080', process.env.IP || '0.0.0.0');
 })();
